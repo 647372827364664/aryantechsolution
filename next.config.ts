@@ -3,6 +3,11 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  output: 'export',
+  trailingSlash: true,
+  images: {
+    unoptimized: true,
+  },
   // Ensure Turbopack uses the explicit project root to avoid picking up
   // lockfiles from parent directories (helps in multi-repo or OneDrive setups).
   turbopack: {
