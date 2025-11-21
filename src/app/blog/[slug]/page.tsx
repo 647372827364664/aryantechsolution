@@ -48,9 +48,9 @@ interface BlogPost {
 }
 
 interface BlogPageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 export default function BlogPostPage({ params }: BlogPageProps) {
