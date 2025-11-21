@@ -1,0 +1,452 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Text contrast and visibility fixes */
+.text-gray-600 {
+  color: rgb(75 85 99) !important;
+}
+
+.text-gray-700 {
+  color: rgb(55 65 81) !important;
+}
+
+.text-gray-800 {
+  color: rgb(31 41 55) !important;
+}
+
+.text-gray-900 {
+  color: rgb(17 24 39) !important;
+}
+
+.text-white {
+  color: rgb(255 255 255) !important;
+}
+
+/* Ensure proper contrast for all text elements */
+h1, h2, h3, h4, h5, h6 {
+  color: rgb(17 24 39) !important;
+  font-weight: 700;
+}
+
+p {
+  color: rgb(75 85 99) !important;
+  line-height: 1.6;
+}
+
+/* Button text contrast */
+button {
+  font-weight: 500;
+}
+
+/* Link text visibility */
+a {
+  color: rgb(37 99 235);
+  text-decoration: none;
+}
+
+a:hover {
+  color: rgb(29 78 216);
+}
+
+/* Card text contrast */
+.card-title {
+  color: rgb(17 24 39) !important;
+}
+
+.card-description {
+  color: rgb(75 85 99) !important;
+}
+
+/* Enhanced text size and content overrides */
+.text-sm {
+  color: rgb(55 65 81) !important; /* text-gray-700 */
+}
+
+.text-xs {
+  color: rgb(75 85 99) !important; /* text-gray-600 */
+}
+
+.text-xl {
+  color: rgb(31 41 55) !important; /* text-gray-800 */
+}
+
+/* Form elements */
+label {
+  color: rgb(31 41 55) !important; /* text-gray-800 */
+  font-weight: 500;
+}
+
+/* Table text */
+td {
+  color: rgb(31 41 55) !important; /* text-gray-800 */
+}
+
+th {
+  color: rgb(17 24 39) !important; /* text-gray-900 */
+  font-weight: 600;
+}
+
+/* Enhanced list text */
+li {
+  color: rgb(31 41 55) !important; /* text-gray-800 */
+}
+
+/* Span elements for better readability */
+span:not(.bg-gradient-to-r):not(.text-white):not(.text-blue-600):not(.text-purple-600):not(.text-red-600):not(.text-green-600) {
+  color: rgb(31 41 55) !important; /* text-gray-800 */
+}
+
+/* Specific overrides for light gray colors */
+.text-gray-300 {
+  color: rgb(55 65 81) !important; /* text-gray-700 */
+}
+
+/* Custom animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes blob {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(30px, -50px) scale(1.1);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(-5%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.8);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 3s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+.animation-delay-1000 {
+  animation-delay: 1s;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-3000 {
+  animation-delay: 3s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+.animation-delay-200 {
+  animation-delay: 0.2s;
+}
+
+.animation-delay-400 {
+  animation-delay: 0.4s;
+}
+
+.animation-delay-600 {
+  animation-delay: 0.6s;
+}
+
+.animation-delay-800 {
+  animation-delay: 0.8s;
+}
+
+.animation-delay-1000 {
+  animation-delay: 1s;
+}
+
+.animation-delay-6000 {
+  animation-delay: 6s;
+}
+
+.bg-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Ccircle cx='7' cy='7' r='1'/%3E%3Ccircle cx='53' cy='7' r='1'/%3E%3Ccircle cx='7' cy='53' r='1'/%3E%3Ccircle cx='53' cy='53' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Card hover effects */
+.card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Button improvements */
+.btn-gradient {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  transition: all 0.3s ease;
+}
+
+.btn-gradient:hover {
+  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Custom focus styles */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+}
+
+/* Loading states */
+.loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  to {
+    left: 100%;
+  }
+}
+
+/* Responsive typography */
+@media (max-width: 640px) {
+  .text-responsive-lg {
+    @apply text-3xl;
+  }
+}
+
+@media (min-width: 641px) {
+  .text-responsive-lg {
+    @apply text-4xl;
+  }
+}
+
+@media (min-width: 1024px) {
+  .text-responsive-lg {
+    @apply text-5xl;
+  }
+}
+
+/* Enhanced card animations */
+.card-glow:hover {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
+}
+
+/* Gradient text utilities */
+.gradient-text {
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Smooth transitions for all interactive elements */
+button, a, .transition-smooth {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hero pattern for blog page */
+.hero-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='7' cy='7' r='7'/%3E%3Ccircle cx='53' cy='7' r='7'/%3E%3Ccircle cx='53' cy='53' r='7'/%3E%3Ccircle cx='7' cy='53' r='7'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Admin Chart Styles */
+.admin-chart-container {
+  height: 200px;
+}
+
+.admin-chart-bar {
+  transition: all 0.3s ease;
+  border-radius: 8px 8px 0 0;
+}
+
+.admin-chart-bar:hover {
+  opacity: 0.8;
+  transform: translateY(-2px);
+}
+
+.admin-chart-tooltip {
+  position: absolute;
+  background: #1f2937;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  pointer-events: none;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.admin-chart-tooltip.visible {
+  opacity: 1;
+}
+
+.admin-revenue-bar {
+  background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+}
+
+.admin-users-bar {
+  background: linear-gradient(180deg, #10b981 0%, #047857 100%);
+}
+
+/* Dynamic height utilities - these will be applied via JavaScript */
+.chart-bar-dynamic {
+  min-height: 10px;
+}
+
+/* Chart bar dynamic height classes */
+.chart-bar-h-10 { height: 10%; }
+.chart-bar-h-20 { height: 20%; }
+.chart-bar-h-30 { height: 30%; }
+.chart-bar-h-40 { height: 40%; }
+.chart-bar-h-50 { height: 50%; }
+.chart-bar-h-60 { height: 60%; }
+.chart-bar-h-70 { height: 70%; }
+.chart-bar-h-80 { height: 80%; }
+.chart-bar-h-90 { height: 90%; }
+.chart-bar-h-100 { height: 100%; }
+
+/* Specific pixel heights for small charts */
+.chart-bar-px-10 { height: 10px; }
+.chart-bar-px-20 { height: 20px; }
+.chart-bar-px-30 { height: 30px; }
+.chart-bar-px-40 { height: 40px; }
+.chart-bar-px-50 { height: 50px; }
+.chart-bar-px-60 { height: 60px; }
+.chart-bar-px-80 { height: 80px; }
+.chart-bar-px-100 { height: 100px; }
+.chart-bar-px-120 { height: 120px; }
+.chart-bar-px-140 { height: 140px; }
+.chart-bar-px-160 { height: 160px; }
+.chart-bar-px-180 { height: 180px; }
+.chart-bar-px-200 { height: 200px; }
+
+/* Animation delay classes */
+.anim-delay-0 { animation-delay: 0ms; }
+.anim-delay-100 { animation-delay: 100ms; }
+.anim-delay-200 { animation-delay: 200ms; }
+.anim-delay-300 { animation-delay: 300ms; }
+.anim-delay-400 { animation-delay: 400ms; }
+.anim-delay-500 { animation-delay: 500ms; }
+.anim-delay-600 { animation-delay: 600ms; }
+
+/* Chart bar minimum height */
+.chart-bar-min-h-20 { min-height: 20px; }
+.chart-bar-min-h-15 { min-height: 15px; }

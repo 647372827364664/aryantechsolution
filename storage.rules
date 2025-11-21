@@ -1,0 +1,112 @@
+rules_version = '2';
+
+// Firebase Storage Security Rules
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    function isValidImageType() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
+    function isValidFileSize(maxSizeInMB) {
+      return request.resource.size < maxSizeInMB * 1024 * 1024;
+    }
+    
+    // Product images - only admins can upload, public read
+    match /products/{productId}/{imageId} {
+      // Anyone can read product images
+      allow read: if true;
+      // Only admins can upload, update, and delete product images
+      allow write, delete: if isAdmin() && 
+        isValidImageType() && 
+        isValidFileSize(10); // 10MB limit
+    }
+    
+    // Blog images - only admins can upload, public read
+    match /blogs/{blogId}/{imageId} {
+      // Anyone can read blog images
+      allow read: if true;
+      // Only admins can upload, update, and delete blog images
+      allow write, delete: if isAdmin() && 
+        isValidImageType() && 
+        isValidFileSize(5); // 5MB limit
+    }
+    
+    // User profile images - users can manage their own
+    match /users/{userId}/profile/{imageId} {
+      // Users can manage their own profile images
+      allow read, write, delete: if isAuthenticated() && 
+        request.auth.uid == userId &&
+        isValidImageType() && 
+        isValidFileSize(2); // 2MB limit
+      // Admins can manage all user images
+      allow read, write, delete: if isAdmin();
+    }
+    
+    // User document uploads - users can manage their own
+    match /users/{userId}/documents/{documentId} {
+      // Users can manage their own documents
+      allow read, write, delete: if isAuthenticated() && 
+        request.auth.uid == userId &&
+        isValidFileSize(20); // 20MB limit
+      // Admins can access all user documents
+      allow read: if isAdmin();
+    }
+    
+    // Service attachments - service-related files
+    match /services/{serviceId}/attachments/{fileId} {
+      // Anyone can read service attachments
+      allow read: if true;
+      // Only admins can upload service attachments
+      allow write, delete: if isAdmin() && 
+        isValidFileSize(50); // 50MB limit
+    }
+    
+    // Support ticket attachments - user-specific
+    match /support/{ticketId}/{fileId} {
+      // Users can upload attachments to their own tickets
+      allow write: if isAuthenticated() && 
+        firestore.get(/databases/(default)/documents/support_tickets/$(ticketId)).data.userId == request.auth.uid &&
+        isValidFileSize(25); // 25MB limit
+      // Users and admins can read ticket attachments
+      allow read: if isAuthenticated() && (
+        firestore.get(/databases/(default)/documents/support_tickets/$(ticketId)).data.userId == request.auth.uid ||
+        isAdmin()
+      );
+      // Only admins can delete attachments
+      allow delete: if isAdmin();
+    }
+    
+    // Temporary uploads folder - authenticated users only
+    match /temp/{userId}/{fileId} {
+      // Authenticated users can upload temporary files
+      allow read, write: if isAuthenticated() && 
+        request.auth.uid == userId &&
+        isValidFileSize(100); // 100MB limit
+      // Auto-cleanup - files older than 24 hours should be deleted
+      allow delete: if isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Public folder - anyone can read, only admins can write
+    match /public/{path=**} {
+      allow read: if true;
+      allow write, delete: if isAdmin();
+    }
+    
+    // System assets - logo, favicon, etc.
+    match /assets/{assetId} {
+      allow read: if true;
+      allow write, delete: if isAdmin();
+    }
+  }
+}

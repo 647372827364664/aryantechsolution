@@ -1,0 +1,547 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    function isDeveloper() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'developer';
+    }
+    
+    function hasRole(role) {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
+    }
+    
+    function isAdminOrDeveloper() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'developer'];
+    }
+    
+    // Users collection - user account data
+    match /users/{userId} {
+      // Admins have full access to all user operations
+      allow read, write, create, update, delete: if isAdmin();
+      // Users can read and write their own data
+      allow read, write: if isOwner(userId);
+      // Allow user creation during signup
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      
+      // Data validation for user creation/updates
+      allow write: if isAuthenticated() && (
+        isOwner(userId) || isAdmin()
+      ) && request.resource.data.keys().hasAll(['email']) &&
+        request.resource.data.email is string &&
+        (
+          !('role' in request.resource.data) || 
+          isAdmin() || 
+          request.resource.data.role == 'user'
+        ) &&
+        (
+          !('plan' in request.resource.data) || 
+          request.resource.data.plan in ['free', 'basic', 'premium', 'enterprise']
+        );
+    }
+
+    // Alternative users collection with uid field (used in dashboard)
+    match /users/{docId} {
+      // Users can read documents where uid matches their auth uid
+      allow read: if isAuthenticated() && 
+        resource.data.uid == request.auth.uid;
+      
+      // Users can create documents for themselves
+      allow create: if isAuthenticated() && 
+        request.resource.data.uid == request.auth.uid;
+      
+      // Users can update their own documents
+      allow update: if isAuthenticated() && 
+        resource.data.uid == request.auth.uid;
+      
+      // Admins can read and update all user documents
+      allow read, update: if isAdmin();
+    }
+    
+    // User profiles - extended user information
+    match /user_profiles/{userId} {
+      // Users can read and write their own profile
+      allow read, write: if isOwner(userId);
+      // Anyone can read public profiles (for team pages, etc.)
+      allow read: if isAuthenticated();
+      // Admins can read all profiles
+      allow read: if isAdmin();
+      
+      // Data validation for profile updates
+      allow write: if isAuthenticated() && (
+        isOwner(userId) || isAdmin()
+      ) && (
+        !('role' in request.resource.data) || isAdmin() // Only admins can change roles
+      );
+    }
+    
+    // Services collection - public catalog of available services
+    match /services/{serviceId} {
+      // Anyone can read services (public catalog)
+      allow read: if true;
+      
+      // Only admins can create, update, delete services
+      allow create, update, delete: if isAdmin();
+      
+      // Validate service data structure on write
+      allow write: if isAdmin() &&
+        request.resource.data.keys().hasAll(['title', 'description', 'category', 'pricing', 'features', 'status']) &&
+        request.resource.data.category in ['hosting', 'development', 'domains', 'minecraft', 'custom', 'bots', 'gaming', 'security', 'optimization', 'consulting'] &&
+        request.resource.data.status in ['active', 'inactive', 'coming-soon'] &&
+        request.resource.data.title is string &&
+        request.resource.data.description is string &&
+        request.resource.data.features is list;
+    }
+    
+    // Blogs collection - blog posts and articles
+    match /blogs/{blogId} {
+      // Anyone can read published blogs (public access for SEO and user engagement)
+      allow read: if resource.data.published == true;
+      
+      // Authenticated users can read all blogs including drafts (for admin preview)
+      allow read: if isAuthenticated();
+      
+      // Only admins can create, update, delete blog posts
+      allow create, update, delete: if isAdmin();
+      
+      // Validate blog data structure on write operations
+      allow write: if isAdmin() &&
+        request.resource.data.keys().hasAll(['title', 'excerpt', 'content', 'author', 'category', 'published', 'featured']) &&
+        request.resource.data.published is bool &&
+        request.resource.data.featured is bool &&
+        request.resource.data.title is string &&
+        request.resource.data.content is string &&
+        request.resource.data.excerpt is string &&
+        request.resource.data.category is string &&
+        request.resource.data.author is map &&
+        request.resource.data.author.keys().hasAll(['name', 'role']) &&
+        request.resource.data.slug is string &&
+        request.resource.data.tags is list;
+    }
+    
+    // Legacy posts collection for backward compatibility
+    match /posts/{postId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Blog comments - user engagement with blog posts
+    match /blog_comments/{commentId} {
+      // Anyone can read published comments
+      allow read: if true;
+      
+      // Authenticated users can create comments
+      allow create: if isAuthenticated() &&
+        request.auth.uid == request.resource.data.userId;
+      
+      // Users can edit their own comments
+      allow update: if isAuthenticated() && 
+        request.auth.uid == resource.data.userId;
+      
+      // Users can delete their own comments, admins can delete any
+      allow delete: if isAuthenticated() && (
+        request.auth.uid == resource.data.userId || isAdmin()
+      );
+      
+      // Admins can moderate all comments
+      allow update, delete: if isAdmin();
+    }
+    
+    // Blog likes - user engagement tracking
+    match /blog_likes/{likeId} {
+      // Anyone can read likes count
+      allow read: if true;
+      
+      // Authenticated users can like/unlike posts
+      allow create, delete: if isAuthenticated() &&
+        request.auth.uid == request.resource.data.userId;
+      
+      // Prevent duplicate likes per user per post
+      allow create: if isAuthenticated() &&
+        !exists(/databases/$(database)/documents/blog_likes/$(request.auth.uid + '_' + request.resource.data.blogId));
+    }
+    
+    // Blog views - analytics for post popularity
+    match /blog_views/{viewId} {
+      // Anyone can create view records (for analytics)
+      allow create: if true;
+      
+      // Only admins can read view analytics
+      allow read: if isAdmin();
+      
+      // No updates or deletes for view records
+      allow update, delete: if false;
+    }
+    
+    // User services - user's purchased/active services
+    match /user_services/{userServiceId} {
+      // Users can read and write their own services
+      allow read, write: if isAuthenticated() && 
+        request.auth.uid == resource.data.userId;
+      
+      // Allow creation if user owns the service (users can buy/book services)
+      allow create: if isAuthenticated() && 
+        request.auth.uid == request.resource.data.userId;
+      
+      // Admins can read all user services
+      allow read: if isAdmin();
+      
+      // Users can update their own service bookings
+      allow update: if isAuthenticated() && 
+        request.auth.uid == resource.data.userId;
+    }
+
+    // Alternative userServices collection (camelCase) - used in dashboard
+    match /userServices/{userServiceId} {
+      // Users can read and write their own services
+      allow read, write: if isAuthenticated() && 
+        request.auth.uid == resource.data.userId;
+      
+      // Allow creation if user owns the service
+      allow create: if isAuthenticated() && 
+        request.auth.uid == request.resource.data.userId;
+      
+      // Admins can read and update all user services
+      allow read, update: if isAdmin();
+      
+      // Data validation for user services
+      allow write: if (isAuthenticated() && 
+        request.auth.uid == request.resource.data.userId) || isAdmin() &&
+        request.resource.data.keys().hasAll(['userId', 'name', 'type', 'status']) &&
+        request.resource.data.status in ['active', 'suspended', 'pending', 'expired'] &&
+        request.resource.data.type in ['vps', 'domain', 'minecraft', 'bot', 'hosting', 'custom'] &&
+        request.resource.data.userId is string;
+    }
+
+    // User alerts - system notifications and alerts
+    match /userAlerts/{alertId} {
+      // Users can read their own alerts
+      allow read: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      
+      // Admins can read all alerts
+      allow read: if isAdmin();
+      
+      // Admins can create alerts for any user
+      allow create: if isAdmin();
+      
+      // Authenticated users can create their own alerts (welcome alerts, etc.)
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      
+      // Users can update their own alerts (mark as read, etc.)
+      allow update: if isAuthenticated() && 
+        request.auth.uid == resource.data.userId &&
+        request.resource.data.userId == resource.data.userId;
+      
+      // Admins can update all alerts
+      allow update: if isAdmin();
+      
+      // Data validation for alerts
+      allow write: if (isAdmin() || 
+        (isAuthenticated() && request.resource.data.userId == request.auth.uid)) &&
+        request.resource.data.keys().hasAll(['userId', 'title', 'message']) &&
+        request.resource.data.title is string &&
+        request.resource.data.message is string &&
+        request.resource.data.userId is string &&
+        request.resource.data.read is bool;
+    }
+
+    // System alerts - global system announcements
+    match /systemAlerts/{alertId} {
+      // Anyone can read system alerts
+      allow read: if true;
+      
+      // Only admins can create, update, delete system alerts
+      allow create, update, delete: if isAdmin();
+      
+      // Data validation for system alerts
+      allow write: if isAdmin() &&
+        request.resource.data.keys().hasAll(['type', 'title', 'message', 'active']) &&
+        request.resource.data.type in ['maintenance', 'outage', 'update', 'announcement', 'security'] &&
+        request.resource.data.active is bool &&
+        request.resource.data.title is string &&
+        request.resource.data.message is string;
+    }
+
+    // Notifications - real-time user notifications
+    match /notifications/{notificationId} {
+      // Users can read their own notifications
+      allow read: if isAuthenticated() && 
+        request.auth.uid == resource.data.userId;
+      
+      // Users can update their own notifications (mark as read)
+      allow update: if isAuthenticated() && 
+        request.auth.uid == resource.data.userId &&
+        request.resource.data.userId == resource.data.userId;
+      
+      // Admins can create notifications for any user
+      allow create: if isAdmin();
+      
+      // System can create notifications for users
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      
+      // Admins can read and manage all notifications
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Activity logs - user and system activity tracking
+    match /activity_logs/{logId} {
+      // Users can read their own activity logs
+      allow read: if isAuthenticated() && 
+        request.auth.uid == resource.data.userId;
+      
+      // Anyone can create activity logs (for tracking)
+      allow create: if true;
+      
+      // Only admins can read all logs
+      allow read: if isAdmin();
+      
+      // No updates or deletes for activity logs (immutable)
+      allow update, delete: if false;
+    }
+    
+    // Support tickets - customer support system
+    match /support_tickets/{ticketId} {
+      // Users can read and write their own tickets
+      allow read, write: if isAuthenticated() && (
+        request.auth.uid == resource.data.userId ||
+        isAdmin()
+      );
+      
+      // Users can create tickets for themselves
+      allow create: if isAuthenticated() && 
+        request.auth.uid == request.resource.data.userId;
+      
+      // Admins can read and update all tickets
+      allow read, update: if isAdmin();
+    }
+    
+    // Legacy support tickets collection for backward compatibility
+    match /supportTickets/{ticketId} {
+      allow read, write: if isAuthenticated() && 
+        (resource.data.userId == request.auth.uid || isAdmin() || isDeveloper());
+    }
+    
+    // Orders - order and payment tracking
+    match /orders/{orderId} {
+      // Users can read their own orders
+      allow read: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      
+      // Admins can read all orders
+      allow read: if isAdmin();
+      
+      // Users can create orders for themselves (to buy/book services)
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      
+      // Only admins can update order status
+      allow update: if isAdmin();
+      
+      // Users can cancel their own pending orders
+      allow update: if isAuthenticated() && 
+        request.auth.uid == resource.data.userId &&
+        resource.data.status == 'pending' &&
+        request.resource.data.status == 'cancelled';
+        
+      // Data validation for orders
+      allow write: if (isAuthenticated() && request.auth.uid == request.resource.data.userId) || isAdmin() &&
+        request.resource.data.keys().hasAll(['userId', 'items', 'totalAmount', 'status']) &&
+        request.resource.data.status in ['pending', 'processing', 'completed', 'cancelled', 'refunded'] &&
+        request.resource.data.totalAmount is number &&
+        request.resource.data.items is list &&
+        request.resource.data.userId is string;
+    }
+
+    // Subscriptions - recurring service subscriptions
+    match /subscriptions/{subscriptionId} {
+      // Users can read their own subscriptions
+      allow read: if isAuthenticated() && 
+        request.auth.uid == resource.data.userId;
+      
+      // Users can create subscriptions for themselves
+      allow create: if isAuthenticated() && 
+        request.auth.uid == request.resource.data.userId;
+      
+      // Users can update subscription preferences (not payment status)
+      allow update: if isAuthenticated() && 
+        request.auth.uid == resource.data.userId &&
+        !('status' in request.resource.data.diff(resource.data).affectedKeys()) &&
+        !('nextBillingDate' in request.resource.data.diff(resource.data).affectedKeys());
+      
+      // Admins can read and update all subscriptions
+      allow read, update: if isAdmin();
+      
+      // System can update billing status
+      allow update: if request.auth.uid == null && 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'nextBillingDate', 'lastBillingDate']);
+    }
+
+    // Invoices - billing and payment records
+    match /invoices/{invoiceId} {
+      // Users can read their own invoices
+      allow read: if isAuthenticated() && 
+        request.auth.uid == resource.data.userId;
+      
+      // Only admins and billing system can create invoices
+      allow create: if isAdmin();
+      
+      // Admins can read and update all invoices
+      allow read, update: if isAdmin();
+      
+      // No user updates or deletes for invoices
+      allow update, delete: if false;
+    }
+    
+    // Analytics - usage tracking and metrics
+    match /analytics/{sessionId} {
+      // Anyone can create analytics events
+      allow create: if true;
+      // Only admins can read analytics data
+      allow read: if isAdmin();
+      // No updates or deletes allowed
+      allow update, delete: if false;
+    }
+    
+    // Settings - application configuration
+    match /settings/{settingId} {
+      // Anyone can read public settings
+      allow read: if true;
+      // Only admins can update settings
+      allow write: if isAdmin();
+    }
+    
+    // Public data - any publicly accessible information
+    match /public_data/{document} {
+      // Anyone can read public data
+      allow read: if true;
+      // Only admins can write public data
+      allow write: if isAdmin();
+    }
+    
+    // Legacy public collection
+    match /public/{document=**} {
+      // Anyone can read public data
+      allow read: if true;
+      // Only admins can write public data
+      allow write: if isAdmin();
+    }
+    
+    // Demo data - public read
+    match /demo/{document=**} {
+      // Anyone can read demo data
+      allow read: if true;
+      // Only admins can write demo data
+      allow write: if isAdmin();
+    }
+    
+    // Developer profiles - developers can manage their own, admins can manage all
+    match /developers/{developerId} {
+      // Anyone can read developer profiles (for public directory)
+      allow read: if true;
+      // Developers can update their own profile
+      allow update: if isAuthenticated() && 
+        request.auth.uid == developerId;
+      // Admins can create, update, delete developer profiles
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Products collection - e-commerce products
+    match /products/{productId} {
+      // Everyone can read products
+      allow read: if true;
+      // Only admins can create, update, and delete products
+      allow create, update, delete: if isAdmin();
+      
+      // Data validation for products
+      allow write: if isAdmin() &&
+        request.resource.data.keys().hasAll(['name', 'description', 'price', 'category', 'status']) &&
+        request.resource.data.price is number &&
+        request.resource.data.status in ['active', 'inactive', 'out-of-stock'] &&
+        request.resource.data.category is string &&
+        request.resource.data.name is string;
+    }
+    
+    // Product categories - read-only for most users
+    match /product_categories/{categoryId} {
+      // Everyone can read categories
+      allow read: if true;
+      // Only admins can manage categories
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Shopping carts - individual cart items
+    match /cart/{cartItemId} {
+      // Users can read their own cart items
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // Users can create cart items for themselves
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      // Users can update and delete their own cart items
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // Admins can read all cart items
+      allow read: if isAdmin();
+    }
+
+    // Shopping carts - user-specific (legacy support)
+    match /carts/{userId} {
+      // Users can read and write their own cart
+      allow read, write: if isOwner(userId);
+      // Admins can read all carts
+      allow read: if isAdmin();
+    }
+
+    // Wishlist - individual wishlist items
+    match /wishlist/{wishlistItemId} {
+      // Users can read their own wishlist items
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // Users can create wishlist items for themselves
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      // Users can update and delete their own wishlist items
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // Admins can read all wishlist items
+      allow read: if isAdmin();
+    }
+
+    // OTP - One-Time Password for login verification
+    match /otps/{otpId} {
+      // Users can create OTP documents for themselves during login
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      
+      // Users can read their own OTP documents
+      allow read: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      
+      // Users can update their own OTP documents (to mark as verified)
+      allow update: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      
+      // Data validation for OTP
+      allow write: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.keys().hasAll(['userId', 'email', 'code', 'expiresAt']) &&
+        request.resource.data.code is string &&
+        request.resource.data.email is string &&
+        request.resource.data.expiresAt is number;
+    }
+  }
+}
