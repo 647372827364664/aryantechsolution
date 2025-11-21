@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { generateOTP, getOTPExpiry, OTPResponse } from '@/lib/otp';
+import nodemailer from 'nodemailer';
 
 /**
  * POST /api/auth/send-otp
@@ -46,8 +47,8 @@ export async function POST(request: NextRequest) {
     // For development, we'll just log it to console
     if (process.env.NODE_ENV === 'production' && process.env.SMTP_HOST) {
       try {
-        // Import nodemailer dynamically only in production
-        const nodemailer = (await import('nodemailer')).default;
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const nodemailer = require('nodemailer');
 
         const transporter = nodemailer.createTransporter({
           host: process.env.SMTP_HOST,
