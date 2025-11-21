@@ -47,10 +47,9 @@ export async function POST(request: NextRequest) {
     if (process.env.NODE_ENV === 'production' && process.env.SMTP_HOST) {
       try {
         // Import nodemailer dynamically only in production
-        // eslint-disable-next-line global-require
-        const nodemailer = require('nodemailer');
-        
-        const transporter = nodemailer.createTransport({
+        const nodemailer = (await import('nodemailer')).default;
+
+        const transporter = nodemailer.createTransporter({
           host: process.env.SMTP_HOST,
           port: parseInt(process.env.SMTP_PORT || '587'),
           secure: process.env.SMTP_SECURE === 'true',
