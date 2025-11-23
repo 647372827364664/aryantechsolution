@@ -16,8 +16,9 @@ import {
   List
 } from "lucide-react";
 
-export default function BlogCategoryPage({ params }: { params: { category: string } }) {
-  const categoryName = decodeURIComponent(params.category).replace(/-/g, ' ');
+export default async function BlogCategoryPage({ params }: { params: Promise<{ category: string }> }) {
+  const { category } = await params;
+  const categoryName = decodeURIComponent(category).replace(/-/g, ' ');
   
   // Mock posts for this category
   const categoryPosts = [
