@@ -138,18 +138,52 @@ SMTP_PASS="your_smtp_password"
 
 ## 🚀 Deployment
 
-The application is optimized for deployment on:
-- **Vercel** (recommended for Next.js)
-- **Netlify**
-- **DigitalOcean App Platform**
-- **AWS Amplify**
+The application is optimized for deployment on Vercel, the official Next.js platform.
 
-### Deploy on Vercel
+### Deploy on Vercel (Recommended)
 
-1. Push your code to GitHub
-2. Connect your repository to Vercel
-3. Configure environment variables
-4. Deploy!
+#### Option 1: Via Vercel Dashboard (Easiest)
+1. Go to [vercel.com](https://vercel.com) and sign in with your GitHub account
+2. Click "Add New..." → "Project"
+3. Select your GitHub repository
+4. Configure environment variables:
+   - Click "Environment Variables"
+   - Add all variables from `.env.local`
+5. Click "Deploy"
+
+#### Option 2: Via Vercel CLI
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Deploy
+vercel
+
+# For production deployment
+vercel --prod
+```
+
+#### Environment Variables to Add in Vercel:
+- `NEXT_PUBLIC_FIREBASE_API_KEY`
+- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+- `NEXT_PUBLIC_FIREBASE_APP_ID`
+- `NEXTAUTH_SECRET` (generate with `openssl rand -base64 32`)
+- `NEXTAUTH_URL` (your Vercel domain)
+- And other sensitive credentials
+
+#### Custom Domain
+1. In Vercel dashboard, go to your project settings
+2. Navigate to "Domains"
+3. Add your custom domain
+4. Update DNS records as instructed
+
+### Other Deployment Options
+- **Netlify** - Similar process, supports Next.js
+- **DigitalOcean App Platform** - Docker-based deployment
+- **AWS Amplify** - AWS-native deployment
 
 ## 📄 License
 

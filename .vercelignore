@@ -1,0 +1,9 @@
+.git
+.gitignore
+README.md
+*.md
+node_modules
+npm-debug.log
+.next/cache
+.firebase/
+.firebaserc

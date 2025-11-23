@@ -3,10 +3,14 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
-  output: 'export',
-  trailingSlash: true,
+  // Removed 'output: export' for Vercel serverless functions support
   images: {
-    unoptimized: true,
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+    ],
   },
   // Ensure Turbopack uses the explicit project root to avoid picking up
   // lockfiles from parent directories (helps in multi-repo or OneDrive setups).
@@ -21,6 +25,10 @@ const nextConfig: NextConfig = {
       config.externals['nodemailer'] = 'nodemailer';
     }
     return config;
+  },
+  // Vercel environment detection and optimization
+  experimental: {
+    optimizePackageImports: ['@components', '@lib', '@types'],
   },
 };
 
