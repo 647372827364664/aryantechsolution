@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -47,13 +48,9 @@ interface BlogPost {
   published: boolean;
 }
 
-interface BlogPageProps {
-  params: Promise<{
-    slug: string;
-  }>;
-}
-
-export default function BlogPostPage({ params }: BlogPageProps) {
+export default function BlogPostPage() {
+  const params = useParams();
+  const slug = params.slug as string;
   const [post, setPost] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [liked, setLiked] = useState(false);
@@ -62,14 +59,14 @@ export default function BlogPostPage({ params }: BlogPageProps) {
 
   useEffect(() => {
     fetchBlogPost();
-  }, [params.slug]);
+  }, [slug]);
 
   const fetchBlogPost = async () => {
     try {
       setLoading(true);
       
       // Try to find by slug or ID
-      const blogPost = await getBlogPost(params.slug);
+      const blogPost = await getBlogPost(slug);
       
       if (!blogPost || (blogPost as any).published === false) {
         notFound();

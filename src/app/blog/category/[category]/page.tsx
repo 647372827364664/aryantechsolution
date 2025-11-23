@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
@@ -16,8 +17,9 @@ import {
   List
 } from "lucide-react";
 
-export default async function BlogCategoryPage({ params }: { params: Promise<{ category: string }> }) {
-  const { category } = await params;
+export default function BlogCategoryPage() {
+  const params = useParams();
+  const category = params.category as string;
   const categoryName = decodeURIComponent(category).replace(/-/g, ' ');
   
   // Mock posts for this category
